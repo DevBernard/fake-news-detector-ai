@@ -1,66 +1,38 @@
 import torch
 import torch.nn as nn
-import numpy as np
+from config import BERTIMBAU
 from transformers import AutoModel
 
 
-class CustomBertimbauClassifier ( nn.Module ):
-    """
-    Modelo de classificacao binaria para deteccao de fake
-    news
-    baseado no BERTimbau , com pooling alternativo .
-    Estrategia de pooling :
-    - Extrai o embedding do token [CLS ].
-    - Calcula a media dos embeddings dos tokens validos .
-    - Concatena [CLS ] + media e aplica uma camada de
-    classificacao .
-    """
-    def __init__ ( self,
-                   pretrained_model_name: str = "neuralmind/bert-base-portuguese-cased",
-                   num_labels: int = 2):
-        """
-        Inicializa o modelo .
-        Args :
-            pretrained_model_name : nome do modelo BERTimbau
-            pre - treinado .
-            num_labels : numero de classes de saida (2 para
-            fake / true ).
-        """
+class CustomBertimbauClassifier(nn.Module):
+    def __init__(self,
+                 pretrained_model_name: str = BERTIMBAU,
+                 num_labels: int = 2):
         super().__init__()
-        # TODO : carregar o BERTimbau e definir a cabeca de classificacao
         self.bert = AutoModel.from_pretrained(pretrained_model_name)
-        self.classifier = nn.Linear( #traz uma camada linear treinavel, com pesos e bias
-            in_features=self.bert.config.hidden_size * 2, #quantas features vao entrar na camada linear
-            out_features=num_labels) #(Fake ou Verdadeiro)
+        self.classifier = nn.Linear(
+            in_features=self.bert.config.hidden_size * 2,
+            out_features=num_labels
+        )
 
-    def mean_pooling ( self,
-                       token_embeddings: torch.Tensor ,
-                       attention_mask: torch.Tensor ) -> torch.Tensor:
-        """
-        Calcula a media dos embeddings validos ( ignora
-        tokens de padding ).
-        Args :
-        3
-        token_embeddings : tensor [ batch_size , seq_len ,
-        hidden_size ]
-        attention_mask : tensor [ batch_size , seq_len ]
-        Returns :
-        Tensor [ batch_size , hidden_size ] com a media dos
-        tokens validos .
-        """
-        pass
-    def forward ( self,
-                  input_ids: torch.Tensor,
-                  attention_mask: torch.Tensor ) -> torch.Tensor:
-        """
-        Passagem direta no modelo .
-        Passos :
-        1. Obtem os embeddings da ultima camada do BERT .
-        2. Extrai o vetor [CLS ].
-        3. Calcula a media dos embeddings validos .
-        4. Concatena [CLS ] + media .
-        5. Passa pelo classificador linear .
-        Returns :
-        logits : tensor [ batch_size , num_labels ]
-        """
-        pass
+    def mean_pooling(self,
+                     token_embeddings: torch.Tensor,
+                     attention_mask: torch.Tensor) -> torch.Tensor:
+        mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+        sum_emb = torch.sum(token_embeddings * mask_expanded, dim=1)
+        sum_mask = torch.clamp(mask_expanded.sum(dim=1), min=1e-9) #está pegando a média só dos tokens que não são padding
+
+        return sum_emb / sum_mask
+
+    def forward(self,
+                input_ids:      torch.Tensor,
+                attention_mask: torch.Tensor) -> torch.Tensor:
+        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask) # [batch_size, seq_len, hidden_size]
+        lhs = outputs.last_hidden_state
+        cls: torch.Tensor = lhs[:, 0, :] #cria um plano com o token [CLS] por batch, com o tamanho do emb
+
+        mean   = self.mean_pooling(lhs, attention_mask)
+        concat = torch.cat([cls, mean], dim=1)
+        logits = self.classifier(concat)
+
+        return logits #[batch_size, num_labels] um fake ou true para cada batch
