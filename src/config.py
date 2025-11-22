@@ -1,6 +1,9 @@
 from torch import accelerator
+
+PATH_TO_DATASET = 'documents/Fake.br-Corpus/preprocessed/pre-processed.csv'
 BERTIMBAU = 'neuralmind/bert-base-portuguese-cased'
-SEQ_LEN = 512
+BERTIMBAU = 'neuralmind/bert-base-portuguese-uncased' #combina com o dataset pre processado
+SEQ_LEN = 150 #tamanho máximo da sequência de entrada
 BATCH_SIZE = 16
 LEARNING_RATE = 5e-5
 NUM_EPOCHS = 3
@@ -17,6 +20,7 @@ PAD = '[PAD]'
 
 #nao quero que importe accelerator
 __all__ = [
+    'PATH_TO_DATASET',
     'BERTIMBAU',
     'SEQ_LEN',
     'BATCH_SIZE',
