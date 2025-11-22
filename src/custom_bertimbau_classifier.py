@@ -7,9 +7,10 @@ from transformers import BertForSequenceClassification as BFSC, SpecificPreTrain
 class CustomBertimbauClassifier(nn.Module):
     def __init__(self,
                  pretrained_model_name: str = BERTIMBAU,
-                 num_labels: int = 2):
+                 num_labels: int = 2,
+                 **model_kwargs) -> None:
         super().__init__()
-        self.bert: ModelType  = BFSC.from_pretrained(pretrained_model_name).to(DEVICE) #vou colocar fora também para garantir
+        self.bert: ModelType  = BFSC.from_pretrained(pretrained_model_name, **model_kwargs).to(DEVICE) #vou colocar fora também para garantir
         #simplesmente nao tem como fazer o bert mostrar seus métodos...
         self.eh_vdd_ou_nao = nn.Linear(
             in_features=self.bert.config.hidden_size * 2,

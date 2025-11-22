@@ -5,8 +5,8 @@ from transformers import (
 )
 
 class FineTuner():
-    def __init__():
-        pass
+    def __init__(self, tokenizer: BertTokenizerFast = None):
+        self.tokenizer = tokenizer
 
     def export_model(self, path: str) -> None:
         self._trainer.save_model(path)
@@ -15,9 +15,9 @@ class FineTuner():
         self._trainer.train()
         self._trainer.evaluate()
 
-    def set_tokenizer(self, model_name) -> 'FineTuner':
-        self.tokenizer = BertTokenizerFast.from_pretrained(model_name) #gonna be used a lot la fora
-        return self
+    # def set_tokenizer(self, model_name) -> 'FineTuner':
+    #     self.tokenizer = BertTokenizerFast.from_pretrained(model_name) #gonna be used a lot la fora
+    #     return self
 
     def set_compute_metrics(self, function) -> 'FineTuner':
         self._compute_metrics = function
