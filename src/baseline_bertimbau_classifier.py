@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from config import BERTIMBAU,DEVICE
-from transformers import BertForSequenceClassification as BFSC, SpecificPreTrainedModel as ModelType
+from .config import BERTIMBAU, DEVICE
+from transformers import BertModel
 
 class BaselineBertimbauClassifier(nn.Module):
     def __init__(self, 
@@ -9,18 +9,27 @@ class BaselineBertimbauClassifier(nn.Module):
                  num_labels: int = 2,
                  **model_kwargs) -> None:
         super().__init__()
-        self.bert = BFSC.from_pretrained(pretrained_model_name, **model_kwargs).to(DEVICE) 
+        
+        self.bert = BertModel.from_pretrained(
+            pretrained_model_name,
+            **model_kwargs
+        ).to(DEVICE)
+
         self.eh_ou_num_eh = nn.Linear(
             in_features=self.bert.config.hidden_size,
             out_features=num_labels
         )
 
-    def forward(self,
-                input_ids:      torch.Tensor,
-                attention_mask: torch.Tensor) -> torch.Tensor:
+    def forward(self, input_ids, attention_mask):
 
-        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask) # [batch_size, seq_len, hidden_size]
-        cls: torch.Tensor = outputs.last_hidden_state[:, 0, :] #cria um plano com o token [CLS] por batch, com o tamanho do emb
+        outputs = self.bert(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            output_hidden_states=False
+        )
+
+        cls = outputs.last_hidden_state[:, 0, :]   # token [CLS]
+
         logits = self.eh_ou_num_eh(cls)
 
         return logits

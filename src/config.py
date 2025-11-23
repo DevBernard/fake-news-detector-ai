@@ -2,13 +2,13 @@ from torch import accelerator
 
 PATH_TO_DATASET = 'documents/Fake.br-Corpus/preprocessed/pre-processed.csv'
 BERTIMBAU = 'neuralmind/bert-base-portuguese-cased'
-BERTIMBAU = 'neuralmind/bert-base-portuguese-uncased' #combina com o dataset pre processado
+# BERTIMBAU = 'neuralmind/bert-base-portuguese-uncased' #combina com o dataset pre processado (descobri que nao existie)
 SEQ_LEN = 150 #tamanho máximo da sequência de entrada
 BATCH_SIZE = 16
 LEARNING_RATE = 5e-5
 NUM_EPOCHS = 3
 RANDOM_SEED = 69 #( ͡° ͜ʖ ͡°)
-DEVICE = accelerator.device() if accelerator.is_available() else 'cpu'
+DEVICE = accelerator.current_accelerator().type if accelerator.is_available() else "cpu" 
 D_FF = 3072
 NUM_HEADS = 12
 DROPOUT = 0.1

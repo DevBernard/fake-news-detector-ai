@@ -3,26 +3,25 @@ from torch.utils.data import Dataset
 from pandas import read_csv
 from sklearn.model_selection import train_test_split
 from transformers import BertTokenizerFast as TokenizerType, BertTokenizerFast
-from config import RANDOM_SEED
+from .config import RANDOM_SEED
 
 class FakeNewsDataset(Dataset):
     def __init__(self, encodings, labels):
         self.encodings = encodings
-        self.labels = labels
+        self._labels = labels
     
     def __len__(self):
-        return len(self.labels)
+        return len(self._labels)
     
     def __getitem__(self, idx):
         item = {k: v[idx] for k, v in self.encodings.items()}
-        item['labels'] = torch_tensor(self.labels[idx], dtype=torch_long)
+        item['labels'] = torch_tensor(self._labels[idx], dtype=torch_long)
         return item
 
 class DatasetLoader():
-    def __init__(self, texts, labels, tokenizer, max_len):
-        self._texts = texts #ja preprocessado
-        self._labels = labels
-        self.tokenizer = tokenizer
+    def __init__(self, path, model_name, max_len):
+        self._model_name = model_name
+        self.path = path #caminho do arquivo ja preprocessado
         self.max_len = max_len
 
     
@@ -30,23 +29,22 @@ class DatasetLoader():
         return len(self._texts)
 
 
-    def load_dataset(self, path, seed: int = RANDOM_SEED):
+    def load_dataset(self, seed: int = RANDOM_SEED):
         ( self
-            ._set_tokenizer(self.tokenizer, self.max_len)
-            ._set_labels_mapping(self._labels)
-            ._set_texts_and_labels(path)
+            ._set_tokenizer(self._model_name)
+            ._set_texts_and_labels()
+            ._set_labels_mapping()
             ._set_train_val_test(seed))
         
         X_train_enc = self._tokenize_batch(self._X_train)
         X_val_enc   = self._tokenize_batch(self._X_val)
         X_test_enc  = self._tokenize_batch(self._X_test)
 
-        train_dataset = FakeNewsDataset(X_train_enc, self._y_train)
-        val_dataset   = FakeNewsDataset(X_val_enc, self._y_val)
-        test_dataset  = FakeNewsDataset(X_test_enc, self._y_test)
+        self._train_dataset = FakeNewsDataset(X_train_enc, self._y_train)
+        self._val_dataset   = FakeNewsDataset(X_val_enc, self._y_val)
+        self._test_dataset  = FakeNewsDataset(X_test_enc, self._y_test)
 
-        return train_dataset, val_dataset, test_dataset
-
+        return self
 
     def _tokenize_batch(self, texts):
         return self.tokenizer(
@@ -61,8 +59,8 @@ class DatasetLoader():
         self.tokenizer: TokenizerType = BertTokenizerFast.from_pretrained(model_name)
         return self
     
-    def _set_texts_and_labels(self, path: str) -> 'DatasetLoader': 
-        df = read_csv(path)
+    def _set_texts_and_labels(self) -> 'DatasetLoader':
+        df = read_csv(self.path)
         self._texts: list[str] = df['preprocessed_news'].tolist()
         self._labels: list[str] = df['label'].tolist()
 
@@ -88,9 +86,27 @@ class DatasetLoader():
 
         return self
 
+    def get_tokenizer(self) -> TokenizerType:
+        if not hasattr(self, 'tokenizer'):
+            raise ValueError("O tokenizer ainda não foi definido. Carregue o dataset primeiro.")
+        return self.tokenizer
+
     def get_texts_with_labels(self, path: str) -> tuple[list[str], list[str]]:
-        return self._texts, self.labels
+        return self._texts, self._labels
 
     def get_labels_mapping(self) -> dict:
+        """Retorna um dicionário com as chaves 'label2id', 'id2label' e 'num_labels'."""
+        if (not hasattr(self, 'label2id') or
+            not hasattr(self, 'id2label') or
+            not hasattr(self, 'num_labels')):
+            raise ValueError("O mapeamento de labels ainda não foi definido. Carregue o dataset primeiro.")
         #bate com os kwargs do BertForSequenceClassification
         return {'label2id': self.label2id, 'id2label': self.id2label, 'num_labels': self.num_labels}
+
+    def get_datasets(self) -> tuple[Dataset, Dataset, Dataset]:
+        if (not hasattr(self, '_train_dataset') or
+            not hasattr(self, '_val_dataset') or
+            not hasattr(self, '_test_dataset')):
+            raise ValueError("Os datasets ainda não foram definidos. Carregue o dataset primeiro.")
+        
+        return self._train_dataset, self._val_dataset, self._test_dataset
