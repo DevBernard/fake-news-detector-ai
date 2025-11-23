@@ -25,7 +25,6 @@ class BaselineBertimbauClassifier(nn.Module):
         outputs = self.bert(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            output_hidden_states=False
         )
 
         cls = outputs.last_hidden_state[:, 0, :]   # token [CLS]

@@ -25,9 +25,6 @@ class CustomBertimbauClassifier(nn.Module):
             out_features=num_labels
         )
 
-    # ------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------
 
     def _expand_one_dimension(self, tensor: torch.Tensor, dim_size: torch.Size) -> torch.Tensor:
         # attention_mask: [batch, seq] → [batch, seq, hidden]
@@ -57,9 +54,6 @@ class CustomBertimbauClassifier(nn.Module):
 
         return sum_emb / sum_mask                    # média sem pad
 
-    # ------------------------------------------------------------
-    # Forward
-    # ------------------------------------------------------------
     def forward(self,
                 input_ids: torch.Tensor,
                 attention_mask: torch.Tensor) -> torch.Tensor:
