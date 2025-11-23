@@ -11,9 +11,10 @@ class FineTuner():
     def export_model(self, path: str) -> None:
         self._trainer.save_model(path)
 
-    def train(self) -> None:
+    def train(self) -> dict:
         self._trainer.train()
-        self._trainer.evaluate()
+        
+        return self._trainer.evaluate()
 
     # def set_tokenizer(self, model_name) -> 'FineTuner':
     #     self.tokenizer = BertTokenizerFast.from_pretrained(model_name) #gonna be used a lot la fora
