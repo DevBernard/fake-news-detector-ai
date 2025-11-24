@@ -1,7 +1,9 @@
 import inspect
+from torch import optim
 from transformers import (
     BertTokenizerFast,
-    Trainer, TrainingArguments
+    Trainer, TrainingArguments,
+    get_linear_schedule_with_warmup
 )
 
 class FineTuner():
@@ -24,6 +26,18 @@ class FineTuner():
         self._compute_metrics = function
         return self
 
+
+    def set_trainer_optimizer_params(self, **kwargs) -> 'FineTuner':
+        custom_optimizer = optim.AdamW([
+            {'params': self.model.bert.parameters(), 'lr': kwargs.get('lr_bert', 5e-5)},
+            {'params': self.model.classifier.parameters(), 'lr': kwargs.get('lr_classifier', 1e-3)}
+        ])
+        custom_scheduler = get_linear_schedule_with_warmup(custom_optimizer, 100, 900)
+
+        self._custom_optimizer: tuple[optim.AdamW, optim.lr_scheduler.lambdaLR] = (custom_optimizer, custom_scheduler)
+        return self
+
+
     def set_trainer(
         self,
         model,
@@ -35,6 +49,8 @@ class FineTuner():
             raise ValueError("Defina os argumentos de treinamento antes de criar o Trainer.")
         elif (not callable(self._compute_metrics)):
             raise ValueError("A função compute_metrics deve ser fornecida e ser chamável.")
+        elif (not hasattr(self, '_custom_optimizer')):
+            raise ValueError("Defina os parâmetros do otimizador antes de criar o Trainer.")
         elif (not self.tokenizer): #nada especifico por retornar Any
             raise ValueError("O tokenizer deve ser fornecido.")
 
@@ -42,6 +58,8 @@ class FineTuner():
             model=model,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
+
+            optimizers=self._custom_optimizer,
 
             compute_metrics=self._compute_metrics,
             args=self._training_args,
@@ -60,27 +78,3 @@ class FineTuner():
         self._training_args = TrainingArguments(**filtered)
 
         return self
-
-
-
-
-# args = build_training_arguments(
-#     output_dir="bertimbau-cls-ptbr",
-#     evaluation_strategy="epoch",
-#     save_strategy="no",
-#     learning_rate=2e-5,
-#     weight_decay=0.01,
-#     per_device_train_batch_size=BATCH,
-#     per_device_eval_batch_size=BATCH,
-#     num_train_epochs=EPOCHS,
-#     fp16=torch.cuda.is_available(),
-#     logging_steps=50,
-#     report_to="none",
-#     seed=SEED
-# )
-
-
-# print("\n=== Iniciando fine-tuning do BERTimbau ===")
-# trainer.train()
-# eval_out = trainer.evaluate()
-# print("\nResultados de validação:", eval_out)

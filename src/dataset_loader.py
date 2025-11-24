@@ -1,3 +1,4 @@
+from torch import optim as torch_optim
 from torch import tensor as torch_tensor, long as torch_long
 from torch.utils.data import Dataset
 from pandas import read_csv
@@ -71,6 +72,10 @@ class DatasetLoader():
         self.label2id: list[int] = {label: idx for idx, label in enumerate(unique_labels)}
         self.id2label: list[str] = {idx: label for label, idx in self.label2id.items()}
         self.num_labels = len(unique_labels)
+
+        return self
+    
+    def _set_trainer_optmizer_params(self, **kwargs) -> 'DatasetLoader':
 
         return self
 

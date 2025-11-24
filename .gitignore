@@ -4,4 +4,5 @@ documents/
 .vscode/
 *.pyc
 __pycache__/
-
+bertimbau-baseline-cls-ptbr/
+bertimbau-alternativo-cls-ptbr/
