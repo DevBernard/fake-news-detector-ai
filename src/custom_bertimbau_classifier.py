@@ -21,7 +21,7 @@ class CustomBertimbauClassifier(nn.Module):
         hidden = self.bert.config.hidden_size
 
         # concat CLS (hidden) + mean pooling (hidden) => 2 * hidden => 2 * 768 = 1536
-        self.eh_vdd_ou_nao = nn.Linear(
+        self.classifier = nn.Linear(
             in_features=hidden * 2,
             out_features=num_labels
         )
@@ -73,7 +73,7 @@ class CustomBertimbauClassifier(nn.Module):
         mean = self.mean_pooling(lhs, attention_mask)
         concat = torch.cat([cls, mean], dim=1) # [batch, hidden*2]
 
-        logits = self.eh_vdd_ou_nao(concat)
+        logits = self.classifier(concat)
 
 
         #adicionando uma loss manual, pois apenas a assim o Trainer reconhece

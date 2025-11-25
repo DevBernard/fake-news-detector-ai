@@ -1,3 +1,4 @@
+# deprecated, mas vou manter por enquanto
 import torch
 import torch.nn as nn
 from transformers import BertForSequenceClassification

@@ -22,6 +22,10 @@ class FineTuner():
     #     self.tokenizer = BertTokenizerFast.from_pretrained(model_name) #gonna be used a lot la fora
     #     return self
 
+    def set_model(self, model) -> 'FineTuner':
+        self.model = model
+        return self
+
     def set_compute_metrics(self, function) -> 'FineTuner':
         self._compute_metrics = function
         return self
@@ -33,16 +37,16 @@ class FineTuner():
             {'params': self.model.classifier.parameters(), 'lr': kwargs.get('lr_classifier', 1e-3)}
         ])
         custom_scheduler = get_linear_schedule_with_warmup(custom_optimizer, 100, 900)
-
+                                     #optim.Optimizer
         self._custom_optimizer: tuple[optim.AdamW, optim.lr_scheduler.lambdaLR] = (custom_optimizer, custom_scheduler)
         return self
 
 
     def set_trainer(
         self,
-        model,
         train_dataset,
         eval_dataset,
+        callbacks, #receives an instance of a EarlyStoppingCallback
     ) -> 'FineTuner':
 
         if (not hasattr(self, '_training_args')):
@@ -55,7 +59,7 @@ class FineTuner():
             raise ValueError("O tokenizer deve ser fornecido.")
 
         self._trainer = Trainer(
-            model=model,
+            model=self.model,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
 
@@ -63,7 +67,9 @@ class FineTuner():
 
             compute_metrics=self._compute_metrics,
             args=self._training_args,
-            tokenizer=self.tokenizer
+            tokenizer=self.tokenizer,
+
+            callbacks=callbacks,
         )
         return self
 
